@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import logoAsset from "@/assets/nutrimilho-logo.png.asset.json";
-import { supabase } from "@/lib/supabase";
+import { listRegistros, createRegistro, deleteRegistro } from "@/lib/api/registros.functions";
 import {
   BarChart,
   Bar,
@@ -89,6 +89,11 @@ const LINHAS = [
   "Resíduo",
 ];
 
+const MESES = [
+  "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+  "Jul", "Ago", "Set", "Out", "Nov", "Dez",
+];
+
 const empty = (): Registro => ({
   id: crypto.randomUUID(),
   data: new Date().toISOString().slice(0, 10),
@@ -100,6 +105,19 @@ const empty = (): Registro => ({
   linha: "Linha 1",
   observacoes: "",
 });
+
+// "YYYY-MM-DD" (sem componente de hora) não deve passar por Date/fuso —
+// new Date("YYYY-MM-DD") interpreta como UTC e pode voltar um dia no pt-BR.
+function formatDataBR(iso: string): string {
+  const [ano, mes, dia] = iso.split("-");
+  return ano && mes && dia ? `${dia}/${mes}/${ano}` : "";
+}
+
+function mesAno(iso: string): string {
+  const [ano, mes] = iso.split("-");
+  if (!ano || !mes) return "—";
+  return `${MESES[Number(mes) - 1]}/${ano.slice(2)}`;
+}
 
 async function loadLogoDataURL(): Promise<string> {
   const res = await fetch(logoAsset.url);
@@ -120,17 +138,11 @@ function Index() {
   useEffect(() => {
     let cancelled = false;
     async function carregar() {
-      const { data, error } = await supabase
-        .from("registros")
-        .select("*")
-        .order("data", { ascending: false })
-        .order("hora", { ascending: false });
-      if (cancelled) return;
-      if (error) {
-        console.error(error);
-      } else if (data) {
+      try {
+        const rows = await listRegistros();
+        if (cancelled) return;
         setRegistros(
-          data.map((r) => ({
+          rows.map((r) => ({
             id: r.id,
             data: r.data,
             turno: r.turno,
@@ -142,8 +154,11 @@ function Index() {
             observacoes: r.observacoes ?? "",
           })),
         );
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      setLoading(false);
     }
     carregar();
     return () => {
@@ -153,10 +168,6 @@ function Index() {
 
   const total = registros.reduce((s, r) => s + (parseFloat(r.peso) || 0), 0);
 
-  const MESES = [
-    "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
-    "Jul", "Ago", "Set", "Out", "Nov", "Dez",
-  ];
   const COLORS = ["#1B5E20", "#2E7D32", "#FFC72C", "#66BB6A", "#F9A825", "#A5D6A7", "#EF6C00"];
 
   const dash = useMemo(() => {
@@ -170,11 +181,7 @@ function Index() {
     };
     return {
       produto: agg((r) => r.produto || "—").sort((a, b) => b.valor - a.valor).slice(0, 8),
-      mes: agg((r) => {
-        if (!r.data) return "—";
-        const d = new Date(r.data);
-        return `${MESES[d.getMonth()]}/${String(d.getFullYear()).slice(2)}`;
-      }),
+      mes: agg((r) => (r.data ? mesAno(r.data) : "—")),
       local: agg((r) => r.local),
       turno: agg((r) => r.turno),
       linha: agg((r) => r.linha),
@@ -186,38 +193,37 @@ function Index() {
     e.preventDefault();
     if (!form.produto.trim() || !form.peso) return;
     const { id: _id, ...payload } = form;
-    const { data, error } = await supabase
-      .from("registros")
-      .insert({ ...payload, peso: parseFloat(form.peso) || 0 })
-      .select()
-      .single();
-    if (error) {
-      console.error(error);
-      return;
+    try {
+      const data = await createRegistro({
+        data: { ...payload, peso: parseFloat(form.peso) || 0 },
+      });
+      setRegistros((p) => [
+        {
+          id: data.id,
+          data: data.data,
+          turno: data.turno,
+          hora: data.hora,
+          produto: data.produto,
+          peso: String(data.peso),
+          local: data.local,
+          linha: data.linha,
+          observacoes: data.observacoes ?? "",
+        },
+        ...p,
+      ]);
+      setForm({ ...empty(), data: form.data, turno: form.turno });
+    } catch (err) {
+      console.error(err);
     }
-    setRegistros((p) => [
-      {
-        id: data.id,
-        data: data.data,
-        turno: data.turno,
-        hora: data.hora,
-        produto: data.produto,
-        peso: String(data.peso),
-        local: data.local,
-        linha: data.linha,
-        observacoes: data.observacoes ?? "",
-      },
-      ...p,
-    ]);
-    setForm({ ...empty(), data: form.data, turno: form.turno });
   }
 
   async function remover(id: string) {
     const anterior = registros;
     setRegistros((p) => p.filter((r) => r.id !== id));
-    const { error } = await supabase.from("registros").delete().eq("id", id);
-    if (error) {
-      console.error(error);
+    try {
+      await deleteRegistro({ data: { id } });
+    } catch (err) {
+      console.error(err);
       setRegistros(anterior);
     }
   }
@@ -272,7 +278,7 @@ function Index() {
         ],
       ],
       body: registros.map((r) => [
-        r.data ? new Date(r.data).toLocaleDateString("pt-BR") : "",
+        formatDataBR(r.data),
         r.turno,
         r.hora,
         r.produto,
@@ -583,11 +589,7 @@ function Index() {
                     key={r.id}
                     className={i % 2 ? "bg-muted/50" : "bg-card"}
                   >
-                    <td className="px-3 py-2">
-                      {r.data
-                        ? new Date(r.data).toLocaleDateString("pt-BR")
-                        : ""}
-                    </td>
+                    <td className="px-3 py-2">{formatDataBR(r.data)}</td>
                     <td className="px-3 py-2">{r.turno}</td>
                     <td className="px-3 py-2">{r.hora}</td>
                     <td className="px-3 py-2 font-medium">{r.produto}</td>
