@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import logoAsset from "@/assets/nutrimilho-logo.png.asset.json";
+import logoUrl from "@/assets/nutrimilho-logo.png";
 import { listRegistros, createRegistro, deleteRegistro } from "@/lib/api/registros.functions";
 import {
   BarChart,
@@ -120,7 +120,7 @@ function mesAno(iso: string): string {
 }
 
 async function loadLogoDataURL(): Promise<string> {
-  const res = await fetch(logoAsset.url);
+  const res = await fetch(logoUrl);
   const blob = await res.blob();
   return await new Promise((resolve, reject) => {
     const r = new FileReader();
@@ -334,7 +334,7 @@ function Index() {
     <div className="min-h-screen bg-background">
       <header className="bg-primary text-primary-foreground">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-4">
-          <img src={logoAsset.url} alt="Nutrimilho" className="h-12 w-auto bg-white rounded-md p-1" />
+          <img src={logoUrl} alt="Nutrimilho" className="h-12 w-auto bg-white rounded-md p-1" />
           <div className="flex-1">
             <h1 className="text-xl font-bold leading-tight">
               Controle de Reprocesso e Resíduos
