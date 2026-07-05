@@ -17,17 +17,20 @@ create table if not exists public.registros (
 alter table public.registros enable row level security;
 
 -- App público sem autenticação: libera leitura/escrita para a chave anônima (publishable key).
-create policy if not exists "registros_select_anon"
+drop policy if exists "registros_select_anon" on public.registros;
+create policy "registros_select_anon"
   on public.registros for select
   to anon
   using (true);
 
-create policy if not exists "registros_insert_anon"
+drop policy if exists "registros_insert_anon" on public.registros;
+create policy "registros_insert_anon"
   on public.registros for insert
   to anon
   with check (true);
 
-create policy if not exists "registros_delete_anon"
+drop policy if exists "registros_delete_anon" on public.registros;
+create policy "registros_delete_anon"
   on public.registros for delete
   to anon
   using (true);
