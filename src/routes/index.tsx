@@ -333,18 +333,24 @@ function Index() {
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-primary text-primary-foreground">
-        <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-4">
-          <img src={logoUrl} alt="Nutrimilho" className="h-12 w-auto bg-white rounded-md p-1" />
-          <div className="flex-1">
-            <h1 className="text-xl font-bold leading-tight">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-4 sm:flex-nowrap sm:gap-4">
+          <img
+            src={logoUrl}
+            alt="Nutrimilho"
+            className="h-10 w-auto shrink-0 rounded-md bg-white p-1 sm:h-12"
+          />
+          <div className="min-w-0 flex-1">
+            <h1 className="text-base font-bold leading-tight sm:text-xl">
               Controle de Reprocesso e Resíduos
             </h1>
-            <p className="text-xs opacity-90">Registros por turno • Exportação em PDF retrato</p>
+            <p className="text-[11px] opacity-90 sm:text-xs">
+              Registros por turno • Exportação em PDF retrato
+            </p>
           </div>
           <button
             onClick={exportarPDF}
             disabled={registros.length === 0}
-            className="rounded-md bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground shadow disabled:opacity-50 hover:brightness-95"
+            className="order-last w-full shrink-0 rounded-md bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground shadow disabled:opacity-50 hover:brightness-95 sm:order-none sm:w-auto"
           >
             Exportar PDF
           </button>
@@ -352,7 +358,7 @@ function Index() {
         <div className="h-1 bg-secondary" />
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-6 space-y-6">
+      <main className="mx-auto max-w-6xl px-3 py-4 space-y-4 sm:px-4 sm:py-6 sm:space-y-6">
         <section className="rounded-lg border bg-card p-4 shadow-sm">
           <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-accent">
             Novo registro
@@ -463,7 +469,7 @@ function Index() {
         </section>
 
         <section className="rounded-lg border bg-card shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between bg-primary px-4 py-2 text-primary-foreground">
+          <div className="flex flex-wrap items-center justify-between gap-1 bg-primary px-4 py-2 text-primary-foreground">
             <h2 className="text-sm font-bold uppercase tracking-wide">Dashboard de indicadores</h2>
             <span className="text-xs opacity-90">{registros.length} registros • {total.toFixed(2)} kg</span>
           </div>
@@ -544,7 +550,7 @@ function Index() {
 
         <section className="rounded-lg border bg-card shadow-sm overflow-hidden">
 
-          <div className="flex items-center justify-between bg-accent px-4 py-2 text-accent-foreground">
+          <div className="flex flex-wrap items-center justify-between gap-1 bg-accent px-4 py-2 text-accent-foreground">
             <h2 className="text-sm font-bold uppercase tracking-wide">
               Registros ({registros.length})
             </h2>
@@ -616,6 +622,10 @@ function Index() {
           </div>
         </section>
       </main>
+
+      <footer className="mt-6 border-t bg-card px-4 py-4 text-center text-xs text-muted-foreground">
+        © 2026 Nutrimilho - (Novaes Tech) | Todos os direitos reservados
+      </footer>
     </div>
   );
 }
