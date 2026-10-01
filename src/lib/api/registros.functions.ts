@@ -5,6 +5,8 @@ import { query } from "../db.server";
 
 const registroSelect = `
   id,
+  categoria,
+  movimento,
   to_char(data, 'YYYY-MM-DD') as data,
   turno,
   hora,
@@ -23,6 +25,8 @@ export const listRegistros = createServerFn({ method: "GET" }).handler(async () 
 });
 
 const registroInput = z.object({
+  categoria: z.enum(["reprocesso", "residuo"]),
+  movimento: z.enum(["gerado", "reprocessado", "carregado"]),
   data: z.string(),
   turno: z.string(),
   hora: z.string(),
@@ -37,10 +41,21 @@ export const createRegistro = createServerFn({ method: "POST" })
   .inputValidator(registroInput)
   .handler(async ({ data }) => {
     const { rows } = await query(
-      `insert into registros (data, turno, hora, produto, peso, local, linha, observacoes)
-       values ($1, $2, $3, $4, $5, $6, $7, $8)
+      `insert into registros (categoria, movimento, data, turno, hora, produto, peso, local, linha, observacoes)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        returning ${registroSelect}`,
-      [data.data, data.turno, data.hora, data.produto, data.peso, data.local, data.linha, data.observacoes],
+      [
+        data.categoria,
+        data.movimento,
+        data.data,
+        data.turno,
+        data.hora,
+        data.produto,
+        data.peso,
+        data.local,
+        data.linha,
+        data.observacoes,
+      ],
     );
     return rows[0];
   });
